@@ -5,139 +5,246 @@ class NoRubroNegro:
     def __init__(self, valor, cor=VERMELHO):
         self.valor = valor
         self.cor = cor
-        self.esquerda = None
-        self.direita = None
+        self.filho_esquerdo = None
+        self.filho_direito = None
         self.pai = None
 
 class ArvoreRubroNegra:
     def __init__(self):
         self.NIL = NoRubroNegro(None, PRETO)
+        self.NIL.filho_esquerdo = self.NIL
+        self.NIL.filho_direito = self.NIL
+        self.NIL.pai = None
         self.raiz = self.NIL
 
-    def rotacao_esquerda(self, x):
-        y = x.direita
-        x.direita = y.esquerda
-        if y.esquerda != self.NIL:
-            y.esquerda.pai = x
-        y.pai = x.pai
-        if x.pai is None:
-            self.raiz = y
-        elif x == x.pai.esquerda:
-            x.pai.esquerda = y
-        else:
-            x.pai.direita = y
-        y.esquerda = x
-        x.pai = y
+    def rotacao_esquerda(self, no_pivot):
+        novo_pai = no_pivot.filho_direito
+        no_pivot.filho_direito = novo_pai.filho_esquerdo
 
-    def rotacao_direita(self, x):
-        y = x.esquerda
-        x.esquerda = y.direita
-        if y.direita != self.NIL:
-            y.direita.pai = x
-        y.pai = x.pai
-        if x.pai is None:
-            self.raiz = y
-        elif x == x.pai.direita:
-            x.pai.direita = y
+        if novo_pai.filho_esquerdo != self.NIL:
+            novo_pai.filho_esquerdo.pai = no_pivot
+
+        novo_pai.pai = no_pivot.pai
+
+        if no_pivot.pai is None:
+            self.raiz = novo_pai
+        elif no_pivot == no_pivot.pai.filho_esquerdo:
+            no_pivot.pai.filho_esquerdo = novo_pai
         else:
-            x.pai.esquerda = y
-        y.direita = x
-        x.pai = y
+            no_pivot.pai.filho_direito = novo_pai
+
+        novo_pai.filho_esquerdo = no_pivot
+        no_pivot.pai = novo_pai
+
+    def rotacao_direita(self, no_pivot):
+        novo_pai = no_pivot.filho_esquerdo
+        no_pivot.filho_esquerdo = novo_pai.filho_direito
+
+        if novo_pai.filho_direito != self.NIL:
+            novo_pai.filho_direito.pai = no_pivot
+
+        novo_pai.pai = no_pivot.pai
+
+        if no_pivot.pai is None:
+            self.raiz = novo_pai
+        elif no_pivot == no_pivot.pai.filho_direito:
+            no_pivot.pai.filho_direito = novo_pai
+        else:
+            no_pivot.pai.filho_esquerdo = novo_pai
+
+        novo_pai.filho_direito = no_pivot
+        no_pivot.pai = novo_pai
 
     def buscar(self, valor):
-        atual = self.raiz
-        while atual != self.NIL and valor != atual.valor:
-            atual = atual.esquerda if valor < atual.valor else atual.direita
-        return atual
+        no_atual = self.raiz
+
+        while no_atual != self.NIL and valor != no_atual.valor:
+            if valor < no_atual.valor:
+                no_atual = no_atual.filho_esquerdo
+            else:
+                no_atual = no_atual.filho_direito
+
+        return no_atual
 
     def minimo(self, no):
-        while no.esquerda != self.NIL:
-            no = no.esquerda
-        return no
+        no_atual = no
+        while no_atual.filho_esquerdo != self.NIL:
+            no_atual = no_atual.filho_esquerdo
+        return no_atual
 
-    def transplante(self, u, v):
-        if u.pai is None:
-            self.raiz = v
-        elif u == u.pai.esquerda:
-            u.pai.esquerda = v
+    def transplante(self, no_removido, no_substituto):
+        if no_removido.pai is None:
+            self.raiz = no_substituto
+        elif no_removido == no_removido.pai.filho_esquerdo:
+            no_removido.pai.filho_esquerdo = no_substituto
         else:
-            u.pai.direita = v
-        v.pai = u.pai
+            no_removido.pai.filho_direito = no_substituto
+
+        no_substituto.pai = no_removido.pai
+
+    def inserir_simples(self, valor):
+        novo_no = NoRubroNegro(valor, VERMELHO)
+        novo_no.filho_esquerdo = self.NIL
+        novo_no.filho_direito = self.NIL
+
+        pai = None
+        no_atual = self.raiz
+
+        while no_atual != self.NIL:
+            pai = no_atual
+            if valor < no_atual.valor:
+                no_atual = no_atual.filho_esquerdo
+            else:
+                no_atual = no_atual.filho_direito
+
+        novo_no.pai = pai
+
+        if pai is None:
+            self.raiz = novo_no
+        elif valor < pai.valor:
+            pai.filho_esquerdo = novo_no
+        else:
+            pai.filho_direito = novo_no
+
+        self.raiz.cor = PRETO
 
     def remover(self, valor):
-        z = self.buscar(valor)
-        if z == self.NIL:
+        no_removido = self.buscar(valor)
+        if no_removido == self.NIL:
             return
 
-        y = z
-        cor_original = y.cor
+        no_que_sai = no_removido
+        cor_original = no_que_sai.cor
 
-        if z.esquerda == self.NIL:
-            x = z.direita
-            self.transplante(z, z.direita)
-        elif z.direita == self.NIL:
-            x = z.esquerda
-            self.transplante(z, z.esquerda)
+        if no_removido.filho_esquerdo == self.NIL:
+            no_substituto = no_removido.filho_direito
+            self.transplante(no_removido, no_removido.filho_direito)
+
+        elif no_removido.filho_direito == self.NIL:
+            no_substituto = no_removido.filho_esquerdo
+            self.transplante(no_removido, no_removido.filho_esquerdo)
+
         else:
-            y = self.minimo(z.direita)
-            cor_original = y.cor
-            x = y.direita
-            if y.pai == z:
-                x.pai = y
+            no_que_sai = self.minimo(no_removido.filho_direito)
+            cor_original = no_que_sai.cor
+            no_substituto = no_que_sai.filho_direito
+
+            if no_que_sai.pai == no_removido:
+                no_substituto.pai = no_que_sai
             else:
-                self.transplante(y, y.direita)
-                y.direita = z.direita
-                y.direita.pai = y
-            self.transplante(z, y)
-            y.esquerda = z.esquerda
-            y.esquerda.pai = y
-            y.cor = z.cor
+                self.transplante(no_que_sai, no_que_sai.filho_direito)
+                no_que_sai.filho_direito = no_removido.filho_direito
+                no_que_sai.filho_direito.pai = no_que_sai
+
+            self.transplante(no_removido, no_que_sai)
+            no_que_sai.filho_esquerdo = no_removido.filho_esquerdo
+            no_que_sai.filho_esquerdo.pai = no_que_sai
+            no_que_sai.cor = no_removido.cor
 
         if cor_original == PRETO:
-            self.corrigir_remocao(x)
+            self.corrigir_remocao(no_substituto)
 
-    def corrigir_remocao(self, x):
-        while x != self.raiz and x.cor == PRETO:
-            if x == x.pai.esquerda:
-                w = x.pai.direita
-                if w.cor == VERMELHO:
-                    w.cor = PRETO
-                    x.pai.cor = VERMELHO
-                    self.rotacao_esquerda(x.pai)
-                    w = x.pai.direita
-                if w.esquerda.cor == PRETO and w.direita.cor == PRETO:
-                    w.cor = VERMELHO
-                    x = x.pai
+    def corrigir_remocao(self, no_atual):
+        while no_atual != self.raiz and no_atual.cor == PRETO:
+
+            pai = no_atual.pai
+
+            if no_atual == pai.filho_esquerdo:
+                irmao = pai.filho_direito
+
+                if irmao.cor == VERMELHO:
+                    irmao.cor = PRETO
+                    pai.cor = VERMELHO
+                    self.rotacao_esquerda(pai)
+                    irmao = pai.filho_direito
+
+                if irmao.filho_esquerdo.cor == PRETO and irmao.filho_direito.cor == PRETO:
+                    irmao.cor = VERMELHO
+                    no_atual = pai
                 else:
-                    if w.direita.cor == PRETO:
-                        w.esquerda.cor = PRETO
-                        w.cor = VERMELHO
-                        self.rotacao_direita(w)
-                        w = x.pai.direita
-                    w.cor = x.pai.cor
-                    x.pai.cor = PRETO
-                    w.direita.cor = PRETO
-                    self.rotacao_esquerda(x.pai)
-                    x = self.raiz
+                    if irmao.filho_direito.cor == PRETO:
+                        irmao.filho_esquerdo.cor = PRETO
+                        irmao.cor = VERMELHO
+                        self.rotacao_direita(irmao)
+                        irmao = pai.filho_direito
+
+                    irmao.cor = pai.cor
+                    pai.cor = PRETO
+                    irmao.filho_direito.cor = PRETO
+                    self.rotacao_esquerda(pai)
+                    no_atual = self.raiz
+
             else:
-                w = x.pai.esquerda
-                if w.cor == VERMELHO:
-                    w.cor = PRETO
-                    x.pai.cor = VERMELHO
-                    self.rotacao_direita(x.pai)
-                    w = x.pai.esquerda
-                if w.direita.cor == PRETO and w.esquerda.cor == PRETO:
-                    w.cor = VERMELHO
-                    x = x.pai
+                irmao = pai.filho_esquerdo
+
+                if irmao.cor == VERMELHO:
+                    irmao.cor = PRETO
+                    pai.cor = VERMELHO
+                    self.rotacao_direita(pai)
+                    irmao = pai.filho_esquerdo
+
+                if irmao.filho_direito.cor == PRETO and irmao.filho_esquerdo.cor == PRETO:
+                    irmao.cor = VERMELHO
+                    no_atual = pai
                 else:
-                    if w.esquerda.cor == PRETO:
-                        w.direita.cor = PRETO
-                        w.cor = VERMELHO
-                        self.rotacao_esquerda(w)
-                        w = x.pai.esquerda
-                    w.cor = x.pai.cor
-                    x.pai.cor = PRETO
-                    w.esquerda.cor = PRETO
-                    self.rotacao_direita(x.pai)
-                    x = self.raiz
-        x.cor = PRETO
+                    if irmao.filho_esquerdo.cor == PRETO:
+                        irmao.filho_direito.cor = PRETO
+                        irmao.cor = VERMELHO
+                        self.rotacao_esquerda(irmao)
+                        irmao = pai.filho_esquerdo
+
+                    irmao.cor = pai.cor
+                    pai.cor = PRETO
+                    irmao.filho_esquerdo.cor = PRETO
+                    self.rotacao_direita(pai)
+                    no_atual = self.raiz
+
+        no_atual.cor = PRETO
+
+    def imprimir(self):
+        print("\nRELATÓRIO DA ÁRVORE RUBRO-NEGRA\n")
+
+        if self.raiz == self.NIL:
+            print("Árvore vazia.")
+            return
+
+        fila = [self.raiz]
+
+        while fila:
+            no_atual = fila.pop(0)
+
+            pai = no_atual.pai.valor if no_atual.pai else None
+            esquerdo = no_atual.filho_esquerdo.valor if no_atual.filho_esquerdo != self.NIL else "NIL"
+            direito = no_atual.filho_direito.valor if no_atual.filho_direito != self.NIL else "NIL"
+
+            print(f"Nó: {no_atual.valor}")
+            print(f"  Cor: {no_atual.cor}")
+            print(f"  Pai: {pai}")
+            print(f"  Filho esquerdo: {esquerdo}")
+            print(f"  Filho direito: {direito}")
+            print("-" * 30)
+
+            if no_atual.filho_esquerdo != self.NIL:
+                fila.append(no_atual.filho_esquerdo)
+            if no_atual.filho_direito != self.NIL:
+                fila.append(no_atual.filho_direito)
+
+def teste_automatico():
+    arvore = ArvoreRubroNegra()
+
+    valores = [40, 20, 60, 10, 30, 50, 70]
+    for valor in valores:
+        arvore.inserir_simples(valor)
+
+    print("Árvore inicial:")
+    arvore.imprimir()
+
+    print("\nRemovendo o nó 40 (dois filhos):")
+    arvore.remover(40)
+    arvore.imprimir()
+
+    print("\nRemovendo o nó 10 (folha):")
+    arvore.remover(10)
+    arvore.imprimir()
+
+teste_automatico()
